@@ -1258,7 +1258,7 @@ dragon.out.minifyElementDetect = function (innerHT) {
                 tempobjects[mintaName].push(dragon.db.db.objects[mintaName][elem]);
         }
     }
-    for (var i = 0; innerHT.length > i; i++) {
+    for (let i = 0; innerHT.length > i; i++) {
         newobject = "";
         charnum = 0;
         for (mintaName in minta) {
@@ -1685,13 +1685,13 @@ dragon.out.js.single = function (mname) {
 
 
 dragon.out.fun.listModules=function(){
-    var outhtml = "";
-    var file = "";
+    let outhtml = "";
+    let file = "";
     outhtml+=dragon.out.tag.listModulesStart.toString();
-    for (var ip = 0; dragon.db.db.projects.length > ip; ip++) {
+    for (let ip = 0; dragon.db.db.projects.length > ip; ip++) {
         outhtml+=
            dragon.out.tag.listModulesProjectStart.toString().replace(/DWP_Rp_ProjectName/g,dragon.db.db.projects[ip].projectName);
-        for (var im = 0; dragon.db.db.projects[ip].projectModules.length > im; im++) {
+        for (let im = 0; dragon.db.db.projects[ip].projectModules.length > im; im++) {
             outhtml+=i
                 dragon.out.tag.listModulesList.toString().replace(/DWP_Rp_Module/g,dragon.db.db.projects[ip].projectModules[im]['Name']);
         }
@@ -1821,7 +1821,7 @@ dragon.out.getMeta = function (mname) {
 
 dragon.out.minifyClass = function (inhtml) {
     dragon.admin.cli.debug(" Minify start -");    
-    var tempobjects = {
+    let tempobjects = {
         lang: [],
         classes: [],
         names: [],
@@ -1844,8 +1844,8 @@ dragon.out.minifyClass = function (inhtml) {
     },
     rexp = "";
     
-    for (name in tempobjects)
-        for (i in dragon.db.db.objects[name]) {
+    for (let name in tempobjects)
+        for (let i in dragon.db.db.objects[name]) {
             if (tempobjects[name].indexOf(dragon.db.db.objects[name][i]) === -1)
                 tempobjects[name].push(dragon.db.db.objects[name][i]);
         }
@@ -1886,13 +1886,13 @@ dragon.out.minifyClass = function (inhtml) {
 
 dragon.out.minifyElementDetect = function (innerHT) {
     dragon.admin.cli.debug("Minify element detect start -");
-    var debugOut = "\n \n \n";
+    let debugOut = "\n \n \n";
     minta = {
-        lang: "DWP_Lang_",
-        classes: "DWP_Class_",
-        names: "DWP_Name_",
-        ids: "DWP_Id_",
-        functions: "DWP_Function_"
+        lang      : ["DWP_Lang_"],
+        classes   : ["DWP_Class_"],
+        names     : ["DWP_Name_"],
+        ids       : ["DWP_Id_"],
+        functions : ["DWP_Function_", "DF_"]
     },
     tempobjects = {
         lang: [],
@@ -1917,19 +1917,20 @@ dragon.out.minifyElementDetect = function (innerHT) {
     },
     newobject = "",
             charnum = 0;
-    for (mintaName in dragon.db.db.objects) {
+    for (let mintaName in dragon.db.db.objects) {
         tempobjects[mintaName] = [];
         for (elem in dragon.db.db.objects[mintaName]) {
             if (tempobjects[mintaName].indexOf(dragon.db.db.objects[mintaName][elem]) === -1)
                 tempobjects[mintaName].push(dragon.db.db.objects[mintaName][elem]);
         }
     }
-    for (var i = 0; innerHT.length > i; i++) {
+    for (let i = 0; innerHT.length > i; i++) {
         newobject = "";
         charnum = 0;
-        for (mintaName in minta) {
-            if (minta[mintaName] === innerHT.slice(i, (i + minta[mintaName].length))) {
-                charnum = minta[mintaName].length;
+        for (let mintaName in minta) 
+            for (let s in minta[mintaName]) {
+            if(minta[mintaName][s] === innerHT.slice(i, (i + minta[mintaName][s].length))) {
+                charnum = minta[mintaName][s].length;
                 while ("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-+/".indexOf(innerHT[i + charnum]) > -1) {
                     charnum++;
                 }
@@ -1941,11 +1942,11 @@ dragon.out.minifyElementDetect = function (innerHT) {
         }
         i = i + charnum;
     }
-    for (name in tempobjects)
+    for (let name in tempobjects)
         tempobjects[name].sort(function (a, b) {
             return parseInt(b.length) - parseInt(a.length)
         });
-    for (mintaName in minta) {
+    for (let mintaName in minta) {
         dragon.db.db.objects[mintaName] = {};
         for (elem in tempobjects[mintaName]) {
             dragon.db.db.objects[mintaName][newobjectSerial[mintaName].toString()] = tempobjects[mintaName][elem];
@@ -5293,6 +5294,7 @@ dragon.admin.db.read = function () {
     dragon.admin.db.utils.groups.checkAndFixAll();
     dragon.admin.db.utils.modules.checkAndFixAll();
     dragon.admin.db.utils.objects.checkAndFixAll();
+    dragon.admin.db.utils.projects.checkAndFixAll();
 }
 
 
@@ -6707,6 +6709,10 @@ dragon.admin.db.utils.options.change = function () {
 
 dragon.admin.db.utils.projects = {}
 
+dragon.admin.db.utils.projects.checkAndFixAll = function () {
+    if (typeof dragon.admin.db.db.projects === "undefined") 
+        dragon.db.db.projects = [];
+}
 
 dragon.admin.db.utils.projects.add = function (projectName) {
     // output  
@@ -7166,19 +7172,18 @@ dragon.admin.render.fun.moduletest = function (moduleName) {
     // output  
     // 0: ok 
     // 1: file not exist
-     var moduleNumber=-1;
-     for(var i=0;dragon.admin.db.db.modules.length>i;i++){
+     let moduleNumber=-1;
+     for(let i=0;dragon.admin.db.db.modules.length>i;i++){
          if(dragon.admin.db.db.modules[i].moduleName===moduleName) moduleNumber = i ;
       }
       if (moduleNumber === -1) return 1;
-      var startdate = new Date().getTime();
-      var simplesize = dragon.out.render.simple("/"+moduleName).toString().length;
-      var enddate = new Date().getTime();
-      var simpletime = enddate-startdate;
-      startdate = new Date().getTime();
-      var minifysize = dragon.out.render.minify("/"+moduleName).toString().length;
+      let startdate = new Date().getTime();
+      let simplesize = dragon.out.render.simple("/"+moduleName).toString().length;
+      let enddate = new Date().getTime();
+      let simpletime = enddate-startdate;
+      let minifysize = dragon.out.render.minify("/"+moduleName).toString().length;
       enddate = new Date().getTime();
-      var minifytime = enddate-startdate;
+      let minifytime = enddate-startdate;
       dragon.admin.db.db.modules[moduleNumber].info={
       simpleSize:simplesize.toString(),
       simpleTime:simpletime.toString(),
@@ -7197,8 +7202,8 @@ dragon.admin.render.fun.filesimple = function (moduleName) {
     // output  
     // 0: ok 
     // 1: file not exist
-     var moduleNumber=-1;
-     for(var i=0;dragon.admin.db.db.modules.length>i;i++){
+     let moduleNumber=-1;
+     for(let i=0;dragon.admin.db.db.modules.length>i;i++){
          if(dragon.admin.db.db.modules[i].moduleName===moduleName) moduleNumber = i ;
       }
       if (moduleNumber === -1) return 1;
@@ -7210,8 +7215,8 @@ dragon.admin.render.fun.fileminify = function (moduleName) {
     // output  
     // 0: ok 
     // 1: file not exist
-     var moduleNumber=-1;
-     for(var i=0;dragon.admin.db.db.modules.length>i;i++){
+     let moduleNumber=-1;
+     for(let i=0;dragon.admin.db.db.modules.length>i;i++){
          if(dragon.admin.db.db.modules[i].moduleName===moduleName) moduleNumber = i ;
       }
       if (moduleNumber === -1) return 1;
@@ -7219,7 +7224,7 @@ dragon.admin.render.fun.fileminify = function (moduleName) {
 }
 
 dragon.admin.render.fun.fileall= function () {
-    for(var i=0;dragon.admin.db.db.modules.length>i;i++){
+    for(let i=0;dragon.admin.db.db.modules.length>i;i++){
         dragon.admin.render.fun.filesimple(dragon.admin.db.db.modules[i].moduleName);
         dragon.admin.render.fun.fileminify(dragon.admin.db.db.modules[i].moduleName);
      }
@@ -7242,7 +7247,7 @@ dragon.init.fun.addStart(function () {
      **************************************/
 
     dragon.admin.cli.interactiveConsole = new interactiveConsole();
-    var out = "";
+    let out = "";
     for (i = 0; 200 > i; i++)
         out += "\n";
     out += '\033[2J';
@@ -7288,7 +7293,7 @@ dragon.admin.db.read();
 
 dragon.init.fun.addStart(function () {
     dragon.admin.httpd.lib.http.createServer(function (req, res) {
-        var body = '';
+        let body = '';
         req.on('data', function (data) {
             body = data;
         });
@@ -7323,16 +7328,17 @@ dragon.init.fun.addStart(function () {
             }
         });
         res.on('close', function () {
+            let Post = false;
             if (typeof body !== "undefined") {
                 try {
-                    var Post = JSON.parse(body.toString('utf8'));
-                    if (typeof Post === "undefined")
+                    Post = JSON.parse(body.toString('utf8'));
+                    if (Post === false)
                         return false;
                     if (typeof Post['O'] === "undefined")
                         return false;
                     dragon.admin.httpd.fun.longPoolKill(Post['O']);
                 } catch (err) {
-
+                    return false;
                 }
             }
         });
