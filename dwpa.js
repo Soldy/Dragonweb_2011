@@ -1888,10 +1888,10 @@ dragon.out.minifyElementDetect = function (innerHT) {
     dragon.admin.cli.debug("Minify element detect start -");
     let debugOut = "\n \n \n";
     minta = {
-        lang      : ["DWP_Lang_"],
-        classes   : ["DWP_Class_"],
-        names     : ["DWP_Name_"],
-        ids       : ["DWP_Id_"],
+        lang      : ["DWP_Lang_", 'DL_'],
+        classes   : ["DWP_Class_", "DC_"],
+        names     : ["DWP_Name_", 'DN_'],
+        ids       : ["DWP_Id_", 'DI_'],
         functions : ["DWP_Function_", "DF_"]
     },
     tempobjects = {
