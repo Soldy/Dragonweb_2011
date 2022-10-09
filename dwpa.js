@@ -1688,16 +1688,6 @@ dragon.out.fun.listModules=function(){
     let outhtml = "";
     let file = "";
     outhtml+=dragon.out.tag.listModulesStart.toString();
-    for (let ip = 0; dragon.db.db.projects.length > ip; ip++) {
-        outhtml+=
-           dragon.out.tag.listModulesProjectStart.toString().replace(/DWP_Rp_ProjectName/g,dragon.db.db.projects[ip].projectName);
-        for (let im = 0; dragon.db.db.projects[ip].projectModules.length > im; im++) {
-            outhtml+=i
-                dragon.out.tag.listModulesList.toString().replace(/DWP_Rp_Module/g,dragon.db.db.projects[ip].projectModules[im]['Name']);
-        }
-        outhtml+=
-            dragon.out.tag.listModulesProjectEnd.toString();
-    }
     outhtml+=dragon.out.tag.listModulesAllStart.toString();;
     for (var im = 0; dragon.db.db.modules.length > im; im++) {
         outhtml+=
@@ -1725,7 +1715,8 @@ dragon.out.fun.listModulesClass = function(){
              modules  : modules,
              files    : files
         }
-        cache = updateProjects();
+        cache = "";
+        cache += updateProjects();
         cache += updateModules();
         cache += updateFiles();
     }
@@ -1791,8 +1782,6 @@ dragon.out.fun.listModulesClass = function(){
     let updated = 0; // updated timestamp
     let out = "";
     let cache = "";
-
-
 }
     
 
