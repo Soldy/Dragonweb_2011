@@ -14,12 +14,6 @@ dragon.s = {}
 
 
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 
 
 dragon.config={
@@ -146,9 +140,11 @@ dragon.httpd.contentTypes={
     "svg":"image/svg+xml",
     "tiff":"image/tiff",
     "eot":"application/vnd.ms-fontobject",
+    'ogg':'application/ogg',
     "otf":"application/font-sfnt",
     "svg":"image/svg+xml",
     "ttf":"application/font-sfnt",
+    "woff2":"application/font-woff",
     "woff":"application/font-woff"
     
 }
@@ -179,11 +175,6 @@ dragon.live = {
     }
      
 }
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 
 dragon.log={
@@ -225,7 +216,7 @@ dragon.out={
         listModulesFilesStart:dragon.fs.fs.readFileSync('modules/www/listModulesFilesStart.html'),
         listModulesFilesList:dragon.fs.fs.readFileSync('modules/www/listModulesFilesList.html'),
         listModulesFilesEnd:dragon.fs.fs.readFileSync('modules/www/listModulesFilesEnd.html'),
-        cdn:"http://blue/cdn", 
+        cdn:(dragon.fs.fs.readFileSync('modules/www/cdn.html', 'utf8')).trim()
     },
     debugjs:dragon.fs.fs.readFileSync('modules/www/js/reload.js'),
     lib:{
@@ -310,11 +301,6 @@ dragon.tools={
 }
 
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 
 dragon.config.fun.init = function(){
@@ -560,7 +546,7 @@ dragon.config.fun.readFileTree=function(){
 }
 
 dragon.config.fun.treeCheck=function(){
-    var pwd= process.cwd();
+    let pwd= process.cwd();
     if(typeof dragon.config.db.tree[pwd] === "undefined"){
         dragon.config.db.tree[pwd]=dragon.config.fun.tools.getCounter("tree").toString();
         dragon.config.fun.tools.jsonSave(dragon.config.v.files.tree, dragon.config.db.tree);
@@ -982,9 +968,18 @@ dragon.httpd.fun.start = function () {
                 } else if (req.url === "/errorreportreq") {
                     try {
                         dragon.log.fun.log(JSON.stringify(Post));
-                        dragon.httpd.fs.appendFile('/var/log/dragonweb/error.js.log', " [" + (new Date()).getTime().toString() + "] " + Post.line.toString() + " || " + Post.url.toString() + " || " + Post.errormsg.toString() + "\n", function (err) {
-                        });
-
+                        dragon.httpd.fs.appendFile(
+                            '/var/log/dragonweb/error.js.log',
+                            (
+                                " [" + 
+                                (new Date()).getTime().toString() + 
+                                "] " + Post.line.toString()+ 
+                                " || " + Post.url.toString()+ 
+                                " || " + Post.errormsg.toString()+ 
+                                "\n"
+                            ), 
+                            function (err) {}
+                        );
                     } catch (err) {
                     }
                     res.writeHead(200, {
@@ -995,9 +990,11 @@ dragon.httpd.fun.start = function () {
                     var tags = req.url.split("/");
                     if ((typeof tags[1] !== "undefined") && (tags[1] === "cdn")) {
                         tags = req.url.split(".");
+                        console.log(tags);
                         res.writeHead(200, {
                             'Content-Type': dragon.httpd.contentTypes[tags[tags.length - 1]]
                         });
+                        return res.end(dragon.fs.fs.readFileSync('www/'+req.url));
                     } else {
                         try {
                             if (typeof retar.t === "undefined") {
@@ -1135,12 +1132,6 @@ dragon.live.contentTypes={
 
 
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 
 dragon.log.fun.log=function (logText, logLevel){
     if (typeof logLevel === "undefined") logLevel = 1;
@@ -1155,13 +1146,6 @@ dragon.log.fun.log=function (logText, logLevel){
 
 
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-
 
 dragon.out.getcdn = function (mname) {
     var outmodule = "";
@@ -1169,11 +1153,6 @@ dragon.out.getcdn = function (mname) {
     return outmodule;
 }
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 
 
@@ -1229,25 +1208,29 @@ dragon.out.minifyElementDetect = function (innerHT) {
         classes: "DWP_Class_",
         names: "DWP_Name_",
         ids: "DWP_Id_",
-        functions: "DWP_Function_"
+        functions: "DWP_Function_",
+        vars: "DWP_Vars"
     },
     tempobjects = {
         classes: [],
         names: [],
         ids: [],
-        functions: []
+        functions: [],
+        vars: []
     },
     newobjects = {
         classes: {},
         names: {},
         ids: {},
-        functions: {}
+        functions: {},
+        vars: {},
     },
     newobjectSerial = {
         classes: 0,
         names: 0,
         ids: 0,
-        functions: 0
+        functions: 0,
+        vars: 0
     },
     newobject = "",
             charnum = 0;
@@ -1587,7 +1570,6 @@ dragon.out.html = function (requrl) {
 //                outhtml = outhtml.replace(/\n/g,"");
             }
                 dragon.out.cache.module[requrl] = outhtml;
-                
         } else {
             outhtml = dragon.out.cache.module[requrl];
         }
@@ -1639,6 +1621,7 @@ dragon.out.getjs = function (mname) {
             
         }
     }
+    outmodule = dragon.out.getSvg(mname, outmodule);
     return outmodule;
 }
 dragon.out.js.multi = function (mname) {
@@ -1668,18 +1651,9 @@ dragon.out.js.single = function (mname) {
     outmodule += dragon.out.tag.jsstart.toString().replace(/modulename/g, "dragonJs");
     outmodule += outformfile.toString();
     outmodule += dragon.out.tag.jsend;
-    return outmodule;
+    outmodule = dragon.out.getSvg(mname, outmodule);
     return outmodule;
 }
-
-
-
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 
 
 
@@ -1801,13 +1775,6 @@ dragon.out.getMeta = function (mname) {
 
 
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-
 dragon.out.minifyClass = function (inhtml) {
     dragon.admin.cli.debug(" Minify start -");    
     let tempobjects = {
@@ -1815,21 +1782,24 @@ dragon.out.minifyClass = function (inhtml) {
         classes: [],
         names: [],
         ids: [],
-        functions: []
+        functions: [],
+        vars: []
     },
     nameTag = {
         lang: "L",
         classes: "C",
         names: "N",
         ids: "I",
-        functions: "F"
+        functions: "F",
+        vars: "V"
     },
     nameSer = {
         lang: 0,
         classes: 0,
         names: 0,
         ids: 0,
-        functions: 0
+        functions: 0,
+        vars: 0
     },
     rexp = "";
     
@@ -1881,28 +1851,32 @@ dragon.out.minifyElementDetect = function (innerHT) {
         classes   : ["DWP_Class_", "DC_"],
         names     : ["DWP_Name_", 'DN_'],
         ids       : ["DWP_Id_", 'DI_'],
-        functions : ["DWP_Function_", "DF_"]
+        functions : ["DWP_Function_", "DF_", "D_F_"],
+        vars : ["DWP_Var_", "DV_", "D_V_"]
     },
     tempobjects = {
         lang: [],
         classes: [],
         names: [],
         ids: [],
-        functions: []
+        functions: [],
+        vars: []
     },
     newobjects = {
         lang: {},
         classes: {},
         names: {},
         ids: {},
-        functions: {}
+        functions: {},
+        vars: {}
     },
     newobjectSerial = {
         lang: 0,
         classes: 0,
         names: 0,
         ids: 0,
-        functions: 0
+        functions: 0,
+        vars: 0
     },
     newobject = "",
             charnum = 0;
@@ -1920,7 +1894,7 @@ dragon.out.minifyElementDetect = function (innerHT) {
             for (let s in minta[mintaName]) {
             if(minta[mintaName][s] === innerHT.slice(i, (i + minta[mintaName][s].length))) {
                 charnum = minta[mintaName][s].length;
-                while ("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-+/".indexOf(innerHT[i + charnum]) > -1) {
+                while ("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_/".indexOf(innerHT[i + charnum]) > -1) {
                     charnum++;
                 }
                 if (innerHT.slice(i, (i + charnum)).indexOf("DWP_Rt_") === -1)
@@ -2002,17 +1976,12 @@ dragon.out.render.minify = function (requrl) {
             removeAttributeQuotes: true,
             removeEmptyAttributes: true
         }).replace("<meta charset=utf-8/>", '<meta charset="utf-8">').replace(/\/>/g, '>');
-        outhtml = dragon.out.minifyClass(dragon.out.getInclude(requrl, outhtml));
         outhtml = dragon.out.getSvg(requrl, dragon.out.getInclude(requrl, outhtml));
+        outhtml = dragon.out.minifyClass(dragon.out.getInclude(requrl, outhtml));
 
         return outhtml;
     }
 }
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 
 
@@ -2041,11 +2010,6 @@ dragon.out.getsass = function (mname) {
 
 
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 
 dragon.out.getSvg = function (mname, html) {
@@ -2503,11 +2467,6 @@ dragon.tools.fun.httpdGetRemote = function (req) {
     var remote = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress; 
     return remote;    
 }
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 
 dragon.init.fun.addStart(dragon.config.fun.init, 7);
@@ -3758,11 +3717,6 @@ dragon.admin = {}
 
 
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 /*
  * 
  *  sets = {
@@ -4270,11 +4224,6 @@ dragon.admin.cli.chess.show = function () {
     return out;
 }
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 dragon.admin.cli.dragon={}
 
@@ -4449,22 +4398,12 @@ dragon.admin.cli.option = function (command) {
 }
 
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 
 console.log(Buffer.from("ICAgICAgICAgICAgICAgLF8gICAuICAuXy4gXy4gIC4NCiAgICAgICAgICAgLCBfLVwnLCd8flx+ICAgICAgfi8gICAgICA7LSdfICAgXy0nICAgICAsO187XywgICAgfn4tDQogIC9+fi1cXy8tJ34nLS0nIFx+fnwgJywgICAgLCcgICAgICAvICAvIH58LV9cXy9+L34gICAgICB+fi0tfn5+fictLV8NCiAgLyAgICAgICAgICAgICAgLC8nLS9+ICdcICwnIF8gICwgJ3wsJ3x+ICAgICAgICAgICAgICAgICAgIC5fLy0sIC9+DQogIH4vLSd+XF8sICAgICAgICctLHwgJ3wuICcgICB+ICAsXCAvJ34gICAgICAgICAgICAgICAgLyAgICAvXyAgL34NCi4tfiAgICAgICd8ICAgICAgICAnJyxcfnxcICAgICAgIF9cfiAgICAgLF8gICwgICAgICAgICAgICAgICAvfA0KICAgICAgICAgICdcICAgICAgICAvJ34gICAgICAgICAgfF8vflxcLC0sfiAgXCAiICAgICAgICAgLF8sLyB8DQogICAgICAgICAgIHwgICAgICAgLyAgICAgICAgICAgIC5fLX4nXF8gX358ICAgICAgICAgICAgICBcICkgLw0KICAgICAgICAgICAgXCAgIF9fLVwgICAgICAgICAgICcvICAgICAgfiB8XCAgXF8gICAgICAgICAgLyAgfg0KICAuLCAgICAgICAgICdcIHwsICB+LV8gICAgICAtIHwgICAgICAgICAgXFxfJyB+fCAgL1wgIFx+ICwNCiAgICAgICAgICAgICAgIH4tXycgIF87ICAgICAgICdcICAgICAgICAgICAnLSwgICBcLCcgL1wvICB8DQogICAgICAgICAgICAgICAgICdcXyx+J1xfICAgICAgIFxfIF8sICAgICAgIC8nICAgICcgIHwsIC98Jw0KICAgICAgICAgICAgICAgICAgIC8gICAgIFxfICAgICAgIH4gfCAgICAgIC8gICAgICAgICBcICB+JzsgLSxfLg0KICAgICAgICAgICAgICAgICAgIHwgICAgICAgflwgICAgICAgIHwgICAgfCAgLCAgICAgICAgJy1fLCAsOyB+IH5cDQogICAgICAgICAgICAgICAgICAgIFwsICAgICAgLyAgICAgICAgXCAgICAvIC98ICAgICAgICAgICAgLC0sICwgICAtLA0KICAgICAgICAgICAgICAgICAgICAgfCAgICAsLyAgICAgICAgICB8ICB8JyB8LyAgICAgICAgICAsLSAgIH4gXCAgICcuDQogICAgICAgICAgICAgICAgICAgICx8ICAgLC8gICAgICAgICAgIFwgLC8gICAgICAgICAgICAgIFwgICAgICAgfA0KICAgICAgICAgICAgICAgICAgICAvICAgIHwgICAgICAgICAgICAgfiAgICAgICAgICAgICAgICAgLX5+LSwgLyAgIF8NCiAgICAgICAgICAgICAgICAgICAgfCAgLC0nICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgfiAgICAvDQogICAgICAgICAgICAgICAgICAgIC8gLCcgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIH4NCiAgICAgICAgICAgICAgICAgICAgJyx8ICB+DQogICAgICAgICAgICAgICAgICAgICAgfic=",'base64'));
 
 
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 dragon.admin.cli.fun.graph = function (barData, startNumber) {
     startNumber = startNumber || 0;
@@ -4695,11 +4634,6 @@ dragon.admin.cli.help.object = function () {
     return ('object command help');
 }
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 
 
@@ -5129,11 +5063,6 @@ dragon.admin.cli.projectFiles= function (command) {
 }
 
 
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 
 dragon.admin.cli.fun.table = function (tableData) {
@@ -5331,7 +5260,8 @@ dragon.admin.db.utils.objects.checkAndFixAll = function () {
 
 dragon.admin.db.utils.objects.types = ["class", "name", "id", "c", "i", "n"];
 
-dragon.admin.db.utils.objects.dictonarys = {"class": "classes",
+dragon.admin.db.utils.objects.dictonarys = {
+    "class": "classes",
     "name": "names",
     "function": "functions",
     "replace": "replaces",
@@ -7219,12 +7149,6 @@ dragon.admin.render.fun.fileall= function () {
      }
      return 0;
 }
-
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 
 
 
